@@ -120,20 +120,14 @@ class EthanolProblem:
         input_shape = x.shape
         x_scaled = x.clone()
         # x_scaled[...,1:] = 20*x[...,1:] - 10 # Natural bounds of this problem is [-10,10]
-        x_scaled = self.xl + (self.xu-self.xl)*x
+        x_scaled = self.xl + (self.xu-self.xl)*x.clone()
         
         output_list = []
         for i in range(input_shape[0]):
             output_list.append(self.perform_simulation(x_scaled[i]))
             
         output1 = torch.tensor(output_list)
-        # output1 = torch.empty(input_shape[:-1] + torch.Size([self.n_nodes]))
-        # output1[:,0] = [TAC_fermentation, F_co2, T1, P1, F_water1, F_glucose1, F_yeast1, TAC_distillation1, T2, P2, F_water2, F_ethanol1, TAC_distillation2, F_ethanol2]
         
-        # output1[...,0] = x_scaled[...,0]
-        
-        # for i in range(1,self.n_var):
-        #     output1[...,i] = x_scaled[...,i]**2 - 10*torch.cos(4*torch.pi*x_scaled[...,i])
             
         return output1
     
@@ -154,17 +148,12 @@ class EthanolProblem:
         """ 
         
        ethanol_price = 1.77 # $/gallon (https://grains.org/ethanol_report/ethanol-market-and-pricing-data-january-31-2024/)
-       unit_convert = 15.42 # kmol to gallon of ethanol
+       unit_convert = 15.42 # kmol/hr to gallon/hr of ethanol
        operating_hours = 8000
        
        input_shape = Y.shape
        output = torch.empty(input_shape[:-1] + torch.Size([2])) # This is the number of objectives
-       # f_1 = Y[...,0]
-       # g_x = 1 + 10*(self.n_var - 1) + torch.sum(Y[...,1:], dim = -1)
        
-       # output[...,0] = f_1
-       # output[...,1] = (1 - torch.sqrt(torch.sqrt((f_1/g_x)**2)))*(g_x)
-          
        output[:,0] = ethanol_price*Y[:, -1]*unit_convert*operating_hours - (Y[:,0] + Y[:,7] + Y[:,-2]) # revenue
        
        CO2_production = Y[:,1]
