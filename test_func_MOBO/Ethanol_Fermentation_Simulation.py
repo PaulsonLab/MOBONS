@@ -28,14 +28,10 @@ class EthanolProblem:
         self.n_var = 5  # Number of decision variables
         self.n_obj = 2  # Number of objectives
         
-        self.xl = torch.tensor([10,20,1,2,2])
-        self.xu = torch.tensor([300,80,5,10,10])  
+        self.xl = torch.tensor([0. for i in range(self.n_var)])
+        self.xu = torch.tensor([1. for i in range(self.n_var)])
         
         self.reference_point = torch.tensor([0.0, 9e10]) # just approximated 
-        # self.hypervolume = 499.655
-        
-        # self.reference_point = torch.tensor([1.0, 6.0])
-        # self.hypervolume = 5.64  # Needs to be computed separately - Done
         self.negate = negate
         
         # Function network values
@@ -119,8 +115,10 @@ class EthanolProblem:
         
         input_shape = x.shape
         x_scaled = x.clone()
-        # x_scaled[...,1:] = 20*x[...,1:] - 10 # Natural bounds of this problem is [-10,10]
-        x_scaled = self.xl + (self.xu-self.xl)*x.clone()
+        xl = torch.tensor([10,20,1,2,2])
+        xu = torch.tensor([300,80,5,10,10]) 
+       
+        x_scaled = xl + (xl)*x_scaled
         
         output_list = []
         for i in range(input_shape[0]):
@@ -175,7 +173,6 @@ class EthanolProblem:
            return -1*output
        else:
            return output
-    
 
 if __name__ == "__main__":
     import matplotlib.pyplot as plt    
