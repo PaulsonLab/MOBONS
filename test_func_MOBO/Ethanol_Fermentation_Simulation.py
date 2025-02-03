@@ -118,7 +118,7 @@ class EthanolProblem:
         xl = torch.tensor([10,20,1,2,2])
         xu = torch.tensor([300,80,5,10,10]) 
        
-        x_scaled = xl + (xl)*x_scaled
+        x_scaled = xl + (xu - xl)*x_scaled
         
         output_list = []
         for i in range(input_shape[0]):
