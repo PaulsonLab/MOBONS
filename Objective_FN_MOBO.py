@@ -7,7 +7,7 @@ This file contains all the MOBO objective functions
 """
 
 import sys
-sys.path.append('/home/kudva.7/Desktop/PaulsonLab/BOFN/BONS_MOBO/test_func_MOBO')
+sys.path.append('/home/tang.1856/MOBONS/test_func_MOBO')
 import torch
 from LevyBranin_Simulation import LevyBraninProblem
 from ZDT4_Simulation import ZDT4Problem
@@ -77,6 +77,7 @@ def function_network_examples(example, negate: bool = False):
             g.addEdge(4,i)
             g.addEdge(5,i)
             g.addEdge(6,i)
+            
         for i in range(12,14):
             g.addEdge(8,i)
             g.addEdge(9,i)
@@ -84,7 +85,7 @@ def function_network_examples(example, negate: bool = False):
             g.addEdge(11,i)
             
         
-        active_input_indices = [[0,1,2],[0,1,2],[0,1,2],[0,1,2],[0,1,2],[0,1,2],[0,1,2],[3],[3],[3],[3],[3],[4],[4]]
+        active_input_indices = [[0,1,2],[0,1,2],[0,1,2],[0,1,2],[0,1,2],[0,1,2],[0,1,2],[3,4,7],[3,4,7],[3,4,7],[3,4,7],[3,4,7],[5,6],[5,6]]
          
         # active_input_indices = [[i] for i in range(n_nodes)]
         g.register_active_input_indices(active_input_indices=active_input_indices)        
@@ -92,8 +93,8 @@ def function_network_examples(example, negate: bool = False):
         # Function that maps the network output to the objective value  
         g.define_objective(test_function.network_to_objective_transform)   
         g.define_reference_point(ref_point = test_function.reference_point)
-        
-        
+        #g.figure()
+        #
         
         
         
@@ -114,7 +115,7 @@ if __name__ == '__main__':
     print('Testing testing...')
     a,b, _=  function_network_examples(example_list[-1]) 
     
-    test_vals = 0.5*torch.zeros(10,5)
+    test_vals = 0.5*torch.zeros(10,7)
     
     c = a(test_vals)
     #print(c)

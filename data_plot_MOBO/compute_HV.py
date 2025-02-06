@@ -14,11 +14,11 @@ from botorch.utils.multi_objective.pareto import is_non_dominated
 from botorch.utils.multi_objective.hypervolume import Hypervolume
 from matplotlib.cm import ScalarMappable
 
-sys.path.append('/home/kudva.7/Desktop/PaulsonLab/BOFN/BONS_MOBO/')
+sys.path.append('/home/tang.1856/MOBONS')
 from Objective_FN_MOBO import function_network_examples
 
 # Load function network and reference point
-example_list = ['levy_branin','ZDT4']
+example_list = ['levy_branin','ethanol']
 example = example_list[1]
 
 plot_repeat_number = 0 # Slect the repeat # to plot
@@ -29,7 +29,7 @@ ref_point = -1*g.ref_point
 n_objectives = ref_point.shape[-1]
 
 # Load saved optimization data
-with open(example + '.pickle', 'rb') as handle:
+with open(example + '_part20.pickle', 'rb') as handle:
     data = pickle.load(handle)
     
     
@@ -37,14 +37,19 @@ algorithms = ['Random', 'qEHVI', 'qPOTS', 'MOBONS']  # Algorithm names
 num_algorithms = len(algorithms)
 
 Ninit = 2 * g.nx + 1  # Initial points
-T = 100  # Iterations
-repeats = 30  # Number of independent runs
+Ninit = 20
+T =50  # Iterations
+repeats =20  # Number of independent runs
 
 plot_hypervolume = True
 plot_scatter_objective = False
 plot_scatter_zoom = False
+plot_violin = True
+plot_flowrate=True
+plot_pareto = True
 max_theoretical = test_function.reference_point
 
+pareto_points_MOBONS_list = []
 
 if plot_hypervolume:
     
@@ -56,14 +61,17 @@ if plot_hypervolume:
     # Compute hypervolume over iterations
     for alg in data:        
         for repeat_no in range(repeats):
+        # for repeat_no in [4,0,1,3,5]:
             Y_true = data[alg][repeat_no]['Y_true']  # Shape: (Ninit + T, n_objectives)
             
             # Convert to maximization (BoTorch assumes maximization)
             Y_neg = -Y_true  
+            # Y_neg = Y_neg[Y_neg[:,0].argsort()]
     
             for t in range(1, T):  # Start from t=1 to avoid computing HV with just initial points
                 pareto_mask = is_non_dominated(Y_neg[: Ninit + t])  # Find Pareto front
                 pareto_points = Y_neg[: Ninit + t][pareto_mask]  # Extract Pareto set
+                # pareto_points = pareto_points[pareto_points[:,0].argsort()]
                 
                 if pareto_points.shape[0] > 0:  # Ensure Pareto set is non-empty
                     # Dynamic Reference Point: slightly worse than worst observed value
@@ -72,6 +80,18 @@ if plot_hypervolume:
                     # Compute hypervolume
                     hv = Hypervolume(ref_point=ref_point)
                     hv_results[alg][repeat_no, t] = hv.compute(pareto_points)#.item()
+                
+            if alg == "MOBONS":
+                pareto_points_MOBONS_list.append(pareto_points[pareto_points[:,0].argsort()])
+                if repeat_no == 0 or hv_results[alg][repeat_no, t]>hv_results[alg][repeat_no-1, t]:
+                    pareto_points_X = data[alg][repeat_no]['X'][: Ninit + t][pareto_mask]
+                    pareto_points_X = pareto_points_X[pareto_points[:,0].argsort()]
+                    pareto_points_best_MOBONS = pareto_points[pareto_points[:,0].argsort()]
+            elif alg == "Random":
+                if repeat_no == 0 or hv_results[alg][repeat_no, t]>hv_results[alg][repeat_no-1, t]:
+                    pareto_points_best_Random = pareto_points[pareto_points[:,0].argsort()]
+                    # pareto_points_X = data[alg][repeat_no]['X'][: Ninit + t][pareto_mask]
+                    # pareto_points_X = pareto_points_X[pareto_points[:,0].argsort()]
     
     # Plot hypervolume results
     plt.figure(figsize=(8, 6))
@@ -91,28 +111,165 @@ if plot_hypervolume:
             line_style = 'solid'
             
 
-        mean_hv = np.mean(hv_results[alg], axis=0)  # Mean HV over repeats
-        std_hv = np.std(hv_results[alg], axis=0)  # Standard deviation
+        mean_hv = np.mean(hv_results[alg], axis=0) # Mean HV over repeats
+        # std_hv = np.std(hv_results[alg], axis=0)  # Standard deviation
     
         plt.plot(range(T), mean_hv, label=alg, color = color_val, linestyle = line_style, linewidth = 3)
-        plt.fill_between(range(T), mean_hv - std_hv, mean_hv + std_hv, alpha=0.2, color = color_val)
+        # plt.fill_between(range(T), mean_hv - std_hv, mean_hv + std_hv, alpha=0.2, color = color_val)
     
     new_T_val = [25*(i) for i in range(5)]   
     fun_vals = [100*i for i in range(7)]   
-    plt.axhline(y = test_function.hypervolume, linewidth = 4, linestyle = 'dashed', color = 'black')
-    plt.xticks(new_T_val, fontsize = 17)
-    plt.yticks(fun_vals, fontsize = 17)
+    # plt.axhline(y = test_function.hypervolume, linewidth = 4, linestyle = 'dashed', color = 'black')
+    # plt.xticks(new_T_val, fontsize = 17)
+    # plt.yticks(fun_vals, fontsize = 17)
     plt.xlabel("Iteration, t", fontsize = 30)
     plt.ylabel("Hypervolume", fontsize = 30)
     plt.title(example, fontsize = 30)
     plt.legend()
     plt.grid()    
-    plt.xlim([0,100])
-    plt.ylim([0,600])
+    # plt.xlim([0,100])
+    # plt.ylim([0,600])
     plt.legend(fontsize = 20, loc = 'lower right', labelspacing = 0.1)
     plt.show()
+
+# if plot_pareto:
+#     plt.figure()
+#     pareto_points_Random = pareto_points_best_Random[pareto_points_best_Random[:,0].argsort()]
+#     pareto_points_Random[:,1]*=-1
+#     # plt.plot(pareto_points, marker='o')
+#     plt.scatter(pareto_points_Random[:,0],pareto_points_Random[:,1], color='green', facecolors='none', s=200)
+#     # plt.stairs(pareto_points_Random[:,0],pareto_points_Random[:,1], linestyle='--',color='orange',linewidth=3, label='Random')
+#     plt.step(pareto_points_Random[:,0].numpy(), pareto_points_Random[:,1].numpy(), linestyle='--',color='green',linewidth=2, label='Random')
+    
+#     pareto_points_MOBONS = pareto_points_best_MOBONS[pareto_points_best_MOBONS[:,0].argsort()]
+#     pareto_points_MOBONS[:,1]*=-1
+#     # plt.plot(pareto_points, marker='o')
+#     plt.scatter(pareto_points_MOBONS[:,0],pareto_points_MOBONS[:,1], color='red', facecolors='none', s=200, marker='^')
+#     plt.step(pareto_points_MOBONS[:,0],pareto_points_MOBONS[:,1], linestyle='--',color='red',linewidth=2, label='MOBONS')
+    
+#     true_pareto = np.load('/home/tang.1856/MOBONS/test_func_MOBO/true_pareto.npy')
+#     true_pareto[:,0]*=-1
+#     true_pareto = true_pareto[true_pareto[:,0].argsort()]
+#     plt.scatter(true_pareto[:,0],true_pareto[:,1], color='grey', facecolors='none', s=20, marker='s')
+#     plt.step(true_pareto[:,0],true_pareto[:,1], linestyle='--',color='grey',linewidth=1, label='True Pareto')
     
     
+#     plt.xlabel('Revenue (million USD/year)')
+#     plt.ylabel('GWP')
+#     plt.grid(True, alpha=0.5)
+#     plt.legend()
+    
+# if plot_flowrate:
+#     plt.figure()
+#     x = np.linspace(1,pareto_points_X[:,0].shape[0],pareto_points_X[:,0].shape[0])
+#     plt.plot(x, 90+20*pareto_points_X[:,0], marker='o', color='orange')
+#     plt.grid(True)
+#     plt.xticks(np.arange(min(x), max(x) + 1, 1))
+#     plt.xlabel('Pareto Index')
+#     plt.ylabel('Feed Flowrate (kmol/hr)')
+
+# Create a 1x2 figure layout
+fig, axes = plt.subplots(1, 2, figsize=(18, 5), dpi=150)  # 1 row, 2 columns
+
+# ====== First Subplot: Pareto Front ======
+if plot_pareto:
+    ax = axes[0]  # Use first subplot
+
+    pareto_points_Random = pareto_points_best_Random[pareto_points_best_Random[:, 0].argsort()]
+    pareto_points_Random[:, 1] *= -1
+    # ax.scatter(pareto_points_Random[:, 0], pareto_points_Random[:, 1], color='green', facecolors='none', s=200)
+    # ax.step(pareto_points_Random[:, 0].numpy(), pareto_points_Random[:, 1].numpy(), linestyle='--', color='green', linewidth=2, label='Random')
+
+    # pareto_points_MOBONS = pareto_points_best_MOBONS[pareto_points_best_MOBONS[:, 0].argsort()]
+    # pareto_points_MOBONS[:, 1] *= -1
+    # ax.scatter(pareto_points_MOBONS[:, 0], pareto_points_MOBONS[:, 1], color='red', facecolors='none', s=200, marker='^')
+    # ax.step(pareto_points_MOBONS[:, 0], pareto_points_MOBONS[:, 1], linestyle='--', color='red', linewidth=2, label='MOBONS')
+    
+    for j in range(20):
+        pareto_points_MOBONS = pareto_points_MOBONS_list[j][pareto_points_MOBONS_list[j][:, 0].argsort()]
+        pareto_points_MOBONS[:, 1] *= -1
+        if j==0:
+            ax.scatter(pareto_points_MOBONS[:, 0], pareto_points_MOBONS[:, 1], facecolors='none', color='red', s=50, marker='*', label='MOBONS')
+        else:
+            ax.scatter(pareto_points_MOBONS[:, 0], pareto_points_MOBONS[:, 1], facecolors='none', color='red', s=50, marker='*')
+            
+        ax.step(pareto_points_MOBONS[:, 0], pareto_points_MOBONS[:, 1], linestyle='--', linewidth=0.5)
+        
+
+    true_pareto = np.load('/home/tang.1856/MOBONS/test_func_MOBO/true_pareto.npy')
+    true_pareto[:, 0] *= -1
+    true_pareto = true_pareto[true_pareto[:, 0].argsort()]
+    ax.scatter(true_pareto[:, 0], true_pareto[:, 1], color='blue', facecolors='none', s=150, marker='s', label='True Pareto')
+    ax.step(true_pareto[:, 0], true_pareto[:, 1], linestyle='-', color='blue', linewidth=2)
+
+    ax.set_xlabel('Revenue (million USD/year)', fontsize = 30)
+    ax.set_ylabel('GWP', fontsize = 30)
+    ax.grid(True, alpha=0.5)
+    ax.legend(fontsize = 20)
+    ax.tick_params(axis='both', labelsize=20)  # Adjusts both x and y ticks font size
+
+    # ax.set_title("Pareto Front Comparison")
+
+# ====== Second Subplot: Flowrate ======
+if plot_flowrate:
+    ax = axes[1]  # Use second subplot
+    index = 0
+    x = np.linspace(1, pareto_points_X[:, index].shape[0], pareto_points_X[:, index].shape[0])
+    # ax.plot(x, pareto_points_X[:, index], marker='*', color='red',markersize=10)
+    
+    
+    # x_true = np.load('/home/tang.1856/MOBONS/test_func_MOBO/x_true.npy')
+    # x1 = np.linspace(1, x_true[:, index].shape[0], x_true[:, index].shape[0])
+    # ax.plot(x1, x_true[:, index], marker='*', color='blue')
+    
+    # ax.grid(True, alpha=0.5)
+    # ax.set_xticks(np.arange(min(x), max(x) + 1, 1))
+    # ax.set_xlabel('Pareto Index', fontsize = 30)
+    # ax.set_ylabel('Feed Flowrate (kmol/hr)', fontsize = 30)
+   
+    
+    import seaborn as sns
+    import pandas as pd
+    name = ['F',r'$T_{rxn}$',r'$P_{rxn}$',r'$P_{1}$',r'$RR_{1}$',r'$P_{2}$',r'$RR_{2}$','p']
+    # Convert tensor to DataFrame
+    pareto_points_X = pareto_points_X[[3,6,9,12,15,18,21,24]]
+    df = pd.DataFrame(pareto_points_X.numpy(), columns=[name[i] for i in range(8)])
+    df["Data Point"] = [f"Point {i+1}" for i in range(8)]
+    
+    # Melt DataFrame for seaborn (long format)
+    df_melted = df.melt(id_vars=["Data Point"], var_name="Variable", value_name="Value")
+    
+    # Plot using seaborn
+    # plt.figure(figsize=(8, 5))
+    sns.barplot(data=df_melted, x="Data Point", y="Value", hue='Variable', width=0.4)
+    ax.set_xlabel("")
+    ax.set_ylabel('Scaled Variable Values',fontsize=30)
+    ax.legend(fontsize = 12)
+    ax.tick_params(axis='both', labelsize=20)  # Adjusts both x and y ticks font size
+
+
+
+# Adjust layout for better spacing
+plt.tight_layout()
+plt.savefig('Pareto_flowrate.png', dpi=300)
+plt.show()
+
+        
+if plot_violin:
+
+    custom_palette = ["green", "blue", "orange", "red"]
+    lb = 20000
+    ub = 38000
+    plt.figure()
+    Random_ = (hv_results['Random'][:,-1]-lb)/(ub-lb)
+    qEHVI_ = (hv_results['qEHVI'][:,-1]-lb)/(ub-lb)
+    MOBONS_ = (hv_results['MOBONS'][:,-1]-lb)/(ub-lb)
+    qPOTS_ = (hv_results['qPOTS'][:,-1]-lb)/(ub-lb)
+    
+    sns.violinplot(data=[Random_,qEHVI_,qPOTS_,MOBONS_], inner="point", palette=custom_palette)
+    plt.ylabel('Hyper Volume')
+    plt.xticks([0, 1, 2, 3], ['Random', 'qEHVI', 'qPOTS', 'MOBONS'])
+
 
 if plot_scatter_objective:
     

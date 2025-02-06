@@ -21,25 +21,31 @@ from biosteam import Stream, settings
 # from biosteam import NRELFermentation
 from biosteam.units import BinaryDistillation, ShortcutColumn
 import biosteam as bst
+from biosteam import units
 
-# Define the multi-objective ZDT4 problem using PyTorch
+# Define the multi-objective Ethanol Fermentation problem using PyTorch
 class EthanolProblem:
     def __init__(self, negate: bool = False):
-        self.n_var = 5  # Number of decision variables
+        self.n_var = 8  # Number of decision variables
         self.n_obj = 2  # Number of objectives
         
         self.xl = torch.tensor([0. for i in range(self.n_var)])
         self.xu = torch.tensor([1. for i in range(self.n_var)])
         
-        self.reference_point = torch.tensor([0.0, 9e10]) # just approximated 
+        # self.reference_point = torch.tensor([-3.25e7, 13000]) # just approximated 
+        self.reference_point = torch.tensor([-28.3, 13600]) # just approximated 
         self.negate = negate
         
         # Function network values
-        self.n_nodes = 14 
+        self.n_nodes = 14
         self.input_dim = self.n_var
+        
+        self.operating_hours = 8000
+        self.payback_period = 10  
     
     def perform_simulation(self, x):
-        rxn_T, rxn_P, RR1, RR2 = float(x[1]), float(x[2]), float(x[3]), float(x[4])
+        rxn_T, rxn_P, P1, RR1, P2, RR2, purity1 = float(x[1]), float(x[2]), float(x[3]), float(x[4]), float(x[5]), float(x[6]), float(x[7])
+        purity2 = 0.85 # purity of ethanol solution
         Yeast = 100
         Water = float(x[0])
         Glucose = float(x[0])
@@ -58,66 +64,85 @@ class EthanolProblem:
                           tau=8, efficiency=0.90, N=8, T=rxn_T+273.15, P=rxn_P*101325)
         F1.cell_growth_reaction.X = 0. 
         
-        feed = F1 - 1
-              
+        # T301 = units.StorageTank('T301', F1-1, tau=4, vessel_material='Carbon steel')
+        # T301.line = 'Beer tank' # Changes name on the diagram
+        # # Separate 99% of yeast
+        # C301 = units.SolidsCentrifuge('C301', T301-0, outs=('recycle_yeast', ''),
+        #                             moisture_content=0.01,
+        #                             split=(1,1, 0.99999, 0.01), # This gets reverted in the next line
+        #                             order=('Ethanol', 'Water','Glucose',  'DryYeast'),
+        #                             solids=('DryYeast',))
+        # C301.split[:] = 1. - C301.split
+        # feed = F1 - 1
+        
+        # create a pump
+        Pump1 = units.Pump('Pump1', F1-1, P= (F1-1).P + 5*101325)
+        # Pump1 = units.Pump('Pump1', C301-1, P= (C301-1).P + 5*101325)
+        
+        
         # Create a distillation column and simulate
         D1 = BinaryDistillation(
-            'D1', ins=feed,
+            'D1', ins=Pump1-0,
             outs=('distillate', 'bottoms_product'),
             LHK=('Ethanol', 'Water'), # Light and heavy keys
-            y_top=0.7, # Light key composition at the distillate
+            y_top=purity1, # Light key composition at the distillate
             x_bot=0.01, # Light key composition at the bottoms product
             k=RR1, # Ratio of actual reflux over minimum reflux
             is_divided=True, # Whether the rectifying and stripping sections are divided
             partial_condenser = False,
+            P = P1*101325
         )
         
-        feed2 = D1-0
+        # feed2 = D1-0
+        Pump2 = units.Pump('Pump2', D1-0, P=(D1-0).P+5*101325)
      
         D2 = BinaryDistillation(
-            'D2', ins=feed2,
+            'D2', ins=Pump2-0,
             outs=('distillate', 'bottoms_product'),
             LHK=('Ethanol', 'Water'), 
-            y_top=0.85, 
-            x_bot=0.05, 
+            y_top=purity2, 
+            x_bot=1-purity2, 
             k=RR2, 
             is_divided=True,
             partial_condenser=False,
-            
+            P = P2*101325
         )
 
         flowsheet_sys = bst.main_flowsheet.create_system('flowsheet_sys')
-        flowsheet_sys.operating_hours = 8000 # Define the operating hour of the system
-        flowsheet_sys.simulate()
+        flowsheet_sys.operating_hours = self.operating_hours # Define the operating hour of the system
+        flowsheet_sys.simulate() # perform simulation
+                
         
-        payback_period = 10    
-        TAC_fermentation = F1.utility_cost + (F1.purchase_cost)/payback_period
+        TAC_fermentation = F1.utility_cost + (F1.purchase_cost)/self.payback_period # TAC of fermentation reactor
         F_co2 = F1.outs[0].imol['CO2']
         T1 = F1.outs[1].T
         P1 = F1.outs[1].P
         F_water1 = F1.outs[1].imol['Water']
         F_glucose1 = F1.outs[1].imol['Glucose']
-        F_yeast1 = F1.outs[1].imol['Yeast']
+        F_ethanol1 = F1.outs[1].imol['Ethanol']
         
-        TAC_distillation1 = D1.utility_cost + (D1.purchase_cost)/payback_period
+        TAC_distillation1 = D1.utility_cost + (D1.purchase_cost)/self.payback_period
         T2 = D1.outs[0].T
         P2 = D1.outs[0].P
         F_water2 = D1.outs[0].imol['Water']
-        F_ethanol1 = D1.outs[0].imol['Ethanol']
+        F_ethanol2 = D1.outs[0].imol['Ethanol']
         
-        TAC_distillation2 = D2.utility_cost + (D2.purchase_cost)/payback_period
-        F_ethanol2 = D2.outs[0].imol['Ethanol']
+        TAC_distillation2 = D2.utility_cost + (D2.purchase_cost)/self.payback_period
+        F_ethanol3 = D2.outs[0].imol['Ethanol']
         
         
-        return [TAC_fermentation, F_co2, T1, P1, F_water1, F_glucose1, F_yeast1, TAC_distillation1, T2, P2, F_water2, F_ethanol1, TAC_distillation2, F_ethanol2]
+        return [TAC_fermentation, F_co2, T1, P1, F_water1, F_glucose1, F_ethanol1, TAC_distillation1, T2, P2, F_water2, F_ethanol2, TAC_distillation2, F_ethanol3]
     
     def function_network_evaluate(self,x:Tensor):
         
         input_shape = x.shape
         x_scaled = x.clone()
-        xl = torch.tensor([10,20,1,2,2])
-        xu = torch.tensor([300,80,5,10,10]) 
-       
+        # xl = torch.tensor([90, 30, 1, 1, 1, 1, 2, 0.5]) # lower bound for design variables
+        # xu = torch.tensor([110, 40, 3, 3, 3, 3, 4, 0.7])  # upper bound for design variables
+        
+        xl = torch.tensor([90, 30, 1, 1, 0.1, 1, 2, 0.5]) # lower bound for design variables
+        xu = torch.tensor([110, 40, 5, 5, 10, 5, 10, 0.7])  # upper bound for design variables
+        
         x_scaled = xl + (xu - xl)*x_scaled
         
         output_list = []
@@ -145,29 +170,29 @@ class EthanolProblem:
 
         """ 
         
-       ethanol_price = 1.77 # $/gallon (https://grains.org/ethanol_report/ethanol-market-and-pricing-data-january-31-2024/)
-       unit_convert = 15.42 # kmol/hr to gallon/hr of ethanol
-       operating_hours = 8000
+       ethanol_price = 1.77*0.85 # $/gallon (https://grains.org/ethanol_report/ethanol-market-and-pricing-data-january-31-2024/)
+       unit_convert = 15.42 # kmol/hr to gallon/hr of ethanol (https://www.aqua-calc.com/calculate/mole-to-volume-and-weight)
        
        input_shape = Y.shape
        output = torch.empty(input_shape[:-1] + torch.Size([2])) # This is the number of objectives
        
-       output[:,0] = ethanol_price*Y[:, -1]*unit_convert*operating_hours - (Y[:,0] + Y[:,7] + Y[:,-2]) # revenue
-       
+       output[:,0] = -1e-6*(ethanol_price*Y[:, -1]*unit_convert*self.operating_hours - (Y[:,0] + Y[:,7] + Y[:,-2])) # revenue
+     
        CO2_production = Y[:,1]
        
        for i in range(CO2_production.shape[0]):
            
-           if CO2_production[i]<50:
-               CO2_production[i] = CO2_production[i]**0.5
-           elif CO2_production[i]>=50 and CO2_production[i]<100:
-               CO2_production[i] = CO2_production[i]**1
-           elif CO2_production[i]>=100 and CO2_production[i]<200:
-               CO2_production[i] = CO2_production[i]**2
-           else:
-               CO2_production[i] = CO2_production[i]**4
-       
-       output[:,1] = -CO2_production # GWP
+            if CO2_production[i]<170:
+                CO2_production[i] = CO2_production[i]**1.0
+            elif CO2_production[i]>=170 and CO2_production[i]<175:
+                CO2_production[i] = CO2_production[i]**1.5
+            elif CO2_production[i]>=175 and CO2_production[i]<180:
+                CO2_production[i] = CO2_production[i]**1.7
+            else:
+                CO2_production[i] = CO2_production[i]**1.8
+
+                  
+       output[:,1] = CO2_production # GWP
         
        if self.negate:
            return -1*output
@@ -184,13 +209,14 @@ if __name__ == "__main__":
     # Initialize the PyTorch-based problem
     torch_problem = EthanolProblem()
     
-    test_val = torch.zeros(2,5)
+    test_val = torch.rand(100,8)
     
     a = torch_problem.function_network_evaluate(test_val)
+    obj = torch_problem.network_to_objective_transform(a)
     
-    print(a)
+    # print(a)
     
-    print(torch_problem.network_to_objective_transform(a))   
+    # print(torch_problem.network_to_objective_transform(a))   
     
     
     if run_GA:
@@ -199,7 +225,7 @@ if __name__ == "__main__":
         
         # Initialize the NSGA-II algorithm
         algorithm = NSGA2(
-            pop_size=100,
+            pop_size=40,
             sampling=get_sampling("real_random"),
             crossover=get_crossover("real_sbx", prob=0.9, eta=15),
             mutation=get_mutation("real_pm", eta=20),
@@ -209,7 +235,7 @@ if __name__ == "__main__":
         # Solve the problem
         res = minimize(problem,
                        algorithm,
-                       termination=("n_gen", 150),  # 78, 100, 150
+                       termination=("n_gen",20),  # 78, 100, 150
                        seed=1,
                        verbose=True)
         
@@ -228,8 +254,8 @@ if __name__ == "__main__":
             plt.grid()
             plt.xlabel("$f_{1}(x)$", fontsize = 20)
             plt.ylabel("$f_{2}(x)$", fontsize = 20)
-            plt.ylim([0,10])
-            plt.xlim([0,0.5])
+            # plt.ylim([0,10])
+            # plt.xlim([0,0.5])
             plt.xticks(fontsize = 20)
             plt.yticks(fontsize = 20)
             plt.show()            

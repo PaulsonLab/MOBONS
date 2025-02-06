@@ -12,15 +12,15 @@ from Objective_FN_MOBO import function_network_examples
 from algorithms_MOBO import MultiObj_BayesOpt
 
 
-example_list = ['levy_branin', 'ZDT4']
+example_list = ['levy_branin', 'ZDT4', 'ethanol']
 
-example_name = example_list[1]
+example_name = example_list[-1]
 
-algo_list = ['qEHVI']
+algo_list = ['Random','qEHVI', 'qPOTS', 'MOBONS']
 
 
-T = 100
-Nrepeats = 30
+T = 50
+Nrepeats = 20
 
 data = {}
 
@@ -32,7 +32,8 @@ for alg in algo_list:
     else:
         function_network,g,_ =  function_network_examples(example_name) 
     
-    Ninit = 2*g.nx + 1
+    # Ninit = 2*g.nx + 1
+    Ninit = 20
     data[alg] = {}
     
     print('Running algorithm', alg)
