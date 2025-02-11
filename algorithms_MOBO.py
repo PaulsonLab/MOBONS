@@ -345,6 +345,9 @@ def MOBONS(train_x:Tensor,
     model = GaussianProcessNetwork(train_X = train_x,
                                    train_Y = train_y,
                                    dag = g)
+    # model.posterior(train_x.unsqueeze(1)).mean_sigma()
+    # TS_acq = ThompsonSampleFunctionNetwork(model)
+    # TS_acq(train_x.unsqueeze(1))
     
     # Generate the Function Network TS
     new_x = MO_TS_observation(train_x = train_x, # x data 
@@ -438,6 +441,8 @@ def MultiObj_BayesOpt(Ninit: int,
     
     data = {"X": X, "Y":Y, "Y_true": Y_true, "time": time_iter}
     
+    
+        
     return data      
     
     

@@ -17,10 +17,10 @@ example_list = ['levy_branin', 'ZDT4', 'ethanol']
 example_name = example_list[-1]
 
 algo_list = ['Random','qEHVI', 'qPOTS', 'MOBONS']
+algo_list = ['MOBONS']
 
-
-T = 50
-Nrepeats = 20
+T = 2
+Nrepeats = 1
 
 data = {}
 
@@ -51,8 +51,10 @@ for alg in algo_list:
                                          alg = alg)
         
         
+
+
         
-with open(example_name + '_part3.pickle', 'wb') as handle:
+with open(example_name + '_SA.pickle', 'wb') as handle:
     pickle.dump(data, handle, protocol=pickle.HIGHEST_PROTOCOL)        
 
 

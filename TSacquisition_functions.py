@@ -26,6 +26,7 @@ from botorch.utils.safe_math import smooth_amax, smooth_amin
 from botorch.models import SingleTaskGP
 from botorch.fit import fit_gpytorch_mll
 from gpytorch.mlls import ExactMarginalLogLikelihood
+
 #from botorch.acquisition import FixedFeatureAcquisitionFunction
 
 
