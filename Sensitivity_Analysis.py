@@ -62,6 +62,9 @@ for alg in algo_list:
                                          seed = i,
                                          alg = alg)
 
+# with open('/home/tang.1856/MOBONS/Data/data.pickle', 'wb') as handle:
+#     pickle.dump(data, handle, protocol=pickle.HIGHEST_PROTOCOL) 
+    
 # Perform SA
 
 # Load function network and reference point
@@ -121,7 +124,7 @@ if plot_hypervolume:
         from SALib.sample.sobol import sample
         percentage_bound = 0.05
         Si_list = [[],[]]
-        for output_indice in range(1,2):
+        for output_indice in range(2):
             # for p in range(pareto_points_X.shape[0]):
             for p in [5,12,16,20]:
                 v1, v2, v3, v4, v5, v6, v7, v8 = pareto_points_X[p][0], pareto_points_X[p][1], pareto_points_X[p][2], pareto_points_X[p][3], pareto_points_X[p][4], pareto_points_X[p][5], pareto_points_X[p][6], pareto_points_X[p][7]
@@ -139,27 +142,24 @@ if plot_hypervolume:
                 }
                 # Generate samples
                 param_values = sample(problem, 10)  
-                Y_SA_true = (g.objective_function(function_network(torch.tensor(param_values)))).numpy()[:,output_indice]
+                # Y_SA = (g.objective_function(function_network(torch.tensor(param_values)))).numpy()[:,output_indice]
                 train_x = data[alg][0]['X']
                 train_y = data[alg][0]['Y']
                 lb = pareto_points_X[p] - percentage_bound*pareto_points_X[p]
                 ub = pareto_points_X[p] + percentage_bound*pareto_points_X[p]
-                new_x = lb + (ub-lb)*torch.rand(50,8)
+                new_x = lb + (ub-lb)*torch.rand(24,8)
                 new_y = function_network(new_x)   
                 
                 train_x = torch.cat((train_x,new_x))
                 train_y = torch.cat((train_y,new_y))
                 model = GaussianProcessNetwork(train_X = train_x,
-                                               train_Y = train_y,
-                                               dag = g)
-                Y_SA = torch.zeros(param_values.shape[0])
-                for _ in range(256):
-                    TS_acq = ThompsonSampleFunctionNetwork(model)
-                    Y_SA+=TS_acq(torch.tensor(param_values).unsqueeze(1))[:,output_indice]
-                Y_SA = (Y_SA/256).detach().numpy()
-                
-                plt.figure()
-                plt.scatter(Y_SA_true, Y_SA)
+                                                train_Y = train_y,
+                                                dag = g)
+                Y_SA = g.objective_function(model.posterior(torch.tensor(param_values)).mean_sigma[0].squeeze(1))[:,output_indice]
+               
+                Y_SA = Y_SA.detach().numpy()
+                # plt.figure()
+                # plt.scatter(Y_SA_true, Y_SA)
                 
                 # Perform analysis
                 Si = analyze(problem, Y_SA, print_to_console=True)
@@ -173,42 +173,56 @@ if plot_hypervolume:
                         
 import numpy as np
 import matplotlib.pyplot as plt
+fig, axes = plt.subplots(1, 2, figsize=(18, 5), dpi=150)
 
-data_ = np.array(Si_list[1])
+for i in range(2):
+    data_ = np.array(Si_list[i])
+    
+    barWidth = 0.2
+    # fig = plt.subplots(figsize =(12, 8)) 
+    
+    br1 = np.arange(len(data_[0])) 
+    br2 = [x + barWidth for x in br1] 
+    br3 = [x + barWidth for x in br2] 
+    br4 = [x + barWidth for x in br3] 
+    br5 = [x + barWidth for x in br4] 
+    
+    axes[i].bar(br1, data_[0], color ='r', width = barWidth, 
+            edgecolor ='black', label ='Point A', hatch='*') 
+    axes[i].bar(br2, data_[1], color ='g', width = barWidth, 
+            edgecolor ='black', label ='Point B', hatch='o') 
+    axes[i].bar(br3, data_[2], color ='b', width = barWidth, 
+            edgecolor ='black', label ='Point C', hatch='/') 
+    axes[i].bar(br4, data_[3], color ='orange', width = barWidth, 
+            edgecolor ='black', label ='Point D', hatch='O') 
+    # plt.bar(br5, data_[4], color ='purple', width = barWidth, 
+    #         edgecolor ='grey', label ='Point E') 
+    
+    # plt.xlabel('Branch', fontweight ='bold', fontsize = 15) 
+    axes[i].set_ylabel('SA Index', fontsize = 30) 
+    axes[i].set_xticks([r + barWidth for r in range(len(data_[0]))], 
+            ['F',r'$T_{rxn}$',r'$P_{rxn}$',r'$P_{1}$',r'$RR_{1}$',r'$P_{2}$',r'$RR_{2}$','p'])
+    
+    axes[i].legend(fontsize = 30)
+    axes[i].tick_params(axis='both', labelsize=30) 
 
-barWidth = 0.1
-fig = plt.subplots(figsize =(12, 8)) 
+                    
+plt.figure(figsize=(24, 20), dpi=150)
 
-br1 = np.arange(len(data_[0])) 
-br2 = [x + barWidth for x in br1] 
-br3 = [x + barWidth for x in br2] 
-br4 = [x + barWidth for x in br3] 
-br5 = [x + barWidth for x in br4] 
+scatter_Y = data[alg][repeat_no]['Y_true']                    
+scatter_Y[:,0]*=-1
+plt.scatter(scatter_Y[:,0], scatter_Y[:,1], s=400, color='blue', label='Sampled Points')
+pareto_points_ = pareto_points[pareto_points[:,0].argsort()]
+pareto_points_[:,1]*=-1                    
+plt.scatter(pareto_points_[:,0], pareto_points_[:,1], marker='*',s=800, color='orange', label='Pareto Points')                    
+plt.step(pareto_points_[:,0], pareto_points_[:,1], linestyle='--', color='red', linewidth=2)                    
+                    
+plt.xlabel('Revenue (million USD/year)', fontsize = 50)
+plt.ylabel('GWP', fontsize = 50)
+plt.grid(True)
+plt.legend(fontsize = 45, loc='lower right')
+plt.tick_params(axis='both', labelsize=50)   
 
-plt.bar(br1, data_[0], color ='r', width = barWidth, 
-        edgecolor ='grey', label ='Point A') 
-plt.bar(br2, data_[1], color ='g', width = barWidth, 
-        edgecolor ='grey', label ='Point B') 
-plt.bar(br3, data_[2], color ='b', width = barWidth, 
-        edgecolor ='grey', label ='Point C') 
-plt.bar(br4, data_[3], color ='orange', width = barWidth, 
-        edgecolor ='grey', label ='Point D') 
-plt.bar(br5, data_[4], color ='purple', width = barWidth, 
-        edgecolor ='grey', label ='Point E') 
-
-# plt.xlabel('Branch', fontweight ='bold', fontsize = 15) 
-plt.ylabel('SA Indice', fontweight ='bold', fontsize = 15) 
-plt.xticks([r + barWidth for r in range(len(data_[0]))], 
-        ['F', 'Trxn', 'Prxn', 'P1', 'RR1', 'T2', 'RR2', 'p'])
-
-plt.legend()
-                    
-                    
-                    
-                    
-                    
-                    
-                    
-                    
+plt.savefig('Pareto_scatter.png',dpi=300)                 
                     
                     

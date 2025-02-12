@@ -13,7 +13,7 @@ import matplotlib.pyplot as plt
 from botorch.utils.multi_objective.pareto import is_non_dominated
 from botorch.utils.multi_objective.hypervolume import Hypervolume
 from matplotlib.cm import ScalarMappable
-
+import seaborn as sns
 sys.path.append('/home/tang.1856/MOBONS')
 from Objective_FN_MOBO import function_network_examples
 
@@ -29,7 +29,7 @@ ref_point = -1*g.ref_point
 n_objectives = ref_point.shape[-1]
 
 # Load saved optimization data
-with open(example + '_part20.pickle', 'rb') as handle:
+with open(example + '_final_data.pickle', 'rb') as handle:
     data = pickle.load(handle)
     
     
@@ -45,9 +45,9 @@ plot_hypervolume = True
 plot_scatter_objective = False
 plot_scatter_zoom = False
 plot_violin = True
-plot_flowrate=True
-plot_pareto = True
-SA = True
+plot_flowrate=False
+plot_pareto = False
+SA = False
 max_theoretical = test_function.reference_point
 
 pareto_points_MOBONS_list = []
@@ -235,7 +235,7 @@ if plot_flowrate:
     # ax.set_ylabel('Feed Flowrate (kmol/hr)', fontsize = 30)
    
     
-    import seaborn as sns
+    
     import pandas as pd
     name = ['F',r'$T_{rxn}$',r'$P_{rxn}$',r'$P_{1}$',r'$RR_{1}$',r'$P_{2}$',r'$RR_{2}$','p']
     # Convert tensor to DataFrame

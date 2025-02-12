@@ -351,7 +351,7 @@ class MultivariateNormalNetwork(Posterior):
                         try:
                             X_node_k = torch.cat([X_node_k, parent_nodes_samples_normalized],-1)
                         except:
-                            X_node_k = torch.cat([X_node_k, parent_nodes_samples_normalized.squeeze(-1)],-1)
+                            X_node_k = torch.cat([X_node_k, parent_nodes_samples_normalized.squeeze(1)],-1)
                             
                         multivariate_normal_at_node_k = self.node_GPs[k].posterior(X_node_k)
                         nodes_samples[..., k] = multivariate_normal_at_node_k.mean

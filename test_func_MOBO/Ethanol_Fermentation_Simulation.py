@@ -178,7 +178,7 @@ class EthanolProblem:
        
        output[:,0] = -1e-6*(ethanol_price*Y[:, -1]*unit_convert*self.operating_hours - (Y[:,0] + Y[:,7] + Y[:,-2])) # revenue
      
-       CO2_production = Y[:,1]
+       CO2_production = Y[:,1].clone()
        
        for i in range(CO2_production.shape[0]):
            
