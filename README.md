@@ -42,12 +42,16 @@ MOBONS is compared against four established MOO algorithms, demonstrating superi
 If you use MOBONS in your work, please cite our chapter. More details can be found in our full publication. Details coming soon.
 
 ## References
+
 [1] Eckart Zitzler, Kalyanmoy Deb, and Lothar Thiele. Comparison of multiobjective evolutionary
 algorithms: Empirical results. Evolutionary Computation, 8(2):173–195, June 2000.
+
 [2] Samuel Daulton, Maximilian Balandat, and Eytan Bakshy. Differentiable expected hypervolume
 improvement for parallel multi-objective bayesian optimization. 2020.
+
 [3] S. Ashwin Renganathan and Kade E. Carlson. qpots: Efficient batch multiobjective bayesian opti-
 mization via pareto optimal thompson sampling, 2023.
+
 ---
 For further details, please refer to the documentation or contact us!
 
