@@ -13,6 +13,12 @@ Designing modern industrial systems requires balancing competing objectives such
 - Enables **parallel evaluations** to improve convergence speed.
 - Leverages **network structure** for **scalability** beyond conventional MOO solvers.
 
+## Installation of dependencies:
+
+To install the required packages, run the following command:
+pip install -r requirements.txt
+
+
 ## Case Studies
 MOBONS is demonstrated on two case studies:
 
