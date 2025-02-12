@@ -31,7 +31,7 @@ This case models **bioethanol production** by integrating **process simulation, 
 - **Simulation Code:** [`test_func_MOBO/Ethanol_Fermentation_Simulation.py`](test_func_MOBO/Ethanol_Fermentation_Simulation.py)
 
 ## Running the Case Studies
-To run the case studies, set an appropriate value of the variable [example_name] in the script [`performance_test_MOBO.py`](performance_test_MOBO.py). 
+To run the case studies, set an appropriate value of the variable ['example_name'] in the script [`performance_test_MOBO.py`](performance_test_MOBO.py). 
 
 The **network gaussian process** for all the case studies in this work is defined in [`Objective_FN_MOBO.py`](Objective_FN_MOBO.py).
 
