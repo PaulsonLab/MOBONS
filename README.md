@@ -41,9 +41,6 @@ To run the case studies, set an appropriate value of the variable `example_name`
 
 The **network gaussian process** for all the case studies in this work is defined in [`Objective_FN_MOBO.py`](Objective_FN_MOBO.py).
 
-## Baseline Comparisons
-MOBONS is compared against four established MOO algorithms, demonstrating superior performance in **scalability, constraint handling, and convergence speed**.
-
 ## Citation
 If you use MOBONS in your work, please cite our chapter. More details can be found in our full publication. Details coming soon.
 
