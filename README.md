@@ -20,6 +20,7 @@ pip install -r requirements.txt
 
 
 ## Case Studies
+At this time, our scripts only support the limiting case of handling **directed acyclic graph (DAG)**, future release will contain extensions to generalized formulations from the paper.
 MOBONS is demonstrated on two case studies:
 
 ### 1. Synthetic ZDT4 Benchmark
