@@ -40,7 +40,7 @@ This case models **bioethanol production** by integrating **process simulation, 
 ## Running the Case Studies
 To run the case studies, set an appropriate value of the variable `example_name` in the script [`performance_test_MOBO.py`](performance_test_MOBO.py). 
 
-The **network gaussian process** for all the case studies in this work is defined in [`Objective_FN_MOBO.py`](Objective_FN_MOBO.py).
+The interconnections of the **network system** for all the case studies in this work is defined in [`Objective_FN_MOBO.py`](Objective_FN_MOBO.py).
 
 ## Citation
 If you use MOBONS in your work, please cite our chapter. More details can be found in our full publication. Details coming soon.
