@@ -43,7 +43,19 @@ To run the case studies, set an appropriate value of the variable `example_name`
 The interconnections of the **network system** for all the case studies in this work is defined in [`Objective_FN_MOBO.py`](Objective_FN_MOBO.py).
 
 ## Citation
-If you use MOBONS in your work, please cite our chapter. More details can be found in our full publication. Details coming soon.
+If you use MOBONS in your work, please cite our chapter. More details can be found in our full publication.
+
+```bibtex
+@misc{MOBONS2025,
+  doi = {10.48550/ARXIV.2502.14121},
+  url = {https://arxiv.org/abs/2502.14121},
+  author = {Kudva,  Akshay and Tang,  Wei-Ting and Paulson,  Joel A.},
+  keywords = {Machine Learning (stat.ML),  Artificial Intelligence (cs.AI),  Machine Learning (cs.LG),  FOS: Computer and information sciences,  FOS: Computer and information sciences},
+  title = {Multi-Objective Bayesian Optimization for Networked Black-Box Systems: A Path to Greener Profits and Smarter Designs},
+  publisher = {arXiv},
+  year = {2025},
+  copyright = {Creative Commons Attribution 4.0 International}
+}
 
 ## References
 
